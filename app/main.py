@@ -1,10 +1,13 @@
+import base64
+import binascii
 from typing import Dict
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.ingestion.pdf_resume_ingestor import PDFResumeIngestor
+from app.ingestion.raw_text_ingestor import RawTextIngestor
 from app.models import AnalyzeResponse, GenerationRequest
-from app.parsers.raw_text_parser import RawTextParser
 from app.roadmap_generator.dag_fallback_strategy import DAGFallbackStrategy
 
 # The API surface stays stable while the underlying generation strategy evolves.
@@ -29,10 +32,38 @@ def healthcheck() -> Dict[str, str]:
 
 @app.post("/api/analyze", response_model=AnalyzeResponse)
 def analyze_profile(request: GenerationRequest) -> AnalyzeResponse:
-    # Component 1 normalizes the raw text before the roadmap engine inspects it.
-    parser = RawTextParser()
-    normalized_source_text = parser.parse(request.source_text)
-    normalized_target_job = parser.parse(request.target_job)
+    # Component 1 converts varied inputs into normalized text for the roadmap engine.
+    ingestors = {
+        "raw_text": RawTextIngestor(),
+        "pdf_resume": PDFResumeIngestor(),
+    }
+    source_ingestor = ingestors[request.source_type]
+    target_ingestor = RawTextIngestor()
+    source_file_bytes = None
+
+    if request.source_type == "pdf_resume":
+        if not request.source_file_base64:
+            raise HTTPException(
+                status_code=400,
+                detail="source_file_base64 is required when source_type is pdf_resume.",
+            )
+
+        try:
+            source_file_bytes = base64.b64decode(request.source_file_base64, validate=True)
+        except (binascii.Error, ValueError) as error:
+            raise HTTPException(
+                status_code=400,
+                detail="source_file_base64 must be valid base64-encoded PDF content.",
+            ) from error
+
+    try:
+        normalized_source_text = source_ingestor.ingest(
+            request.source_text,
+            file_bytes=source_file_bytes,
+        )
+        normalized_target_job = target_ingestor.ingest(request.target_job)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
     strategy = DAGFallbackStrategy()
     analysis = strategy.generate(
@@ -46,6 +77,6 @@ def analyze_profile(request: GenerationRequest) -> AnalyzeResponse:
         normalized_target_job=normalized_target_job,
         nodes=analysis["nodes"],
         edges=analysis["edges"],
-        parser_used=parser.__class__.__name__,
+        ingestor_used=source_ingestor.__class__.__name__,
         strategy_used=strategy.__class__.__name__,
     )

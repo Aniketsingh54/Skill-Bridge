@@ -1,10 +1,21 @@
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
 
 class GenerationRequest(BaseModel):
-    source_text: str = Field(..., min_length=1, description="Resume or profile text.")
+    source_text: str = Field(
+        default="",
+        description="Resume or profile text for raw_text ingestion.",
+    )
+    source_type: Literal["raw_text", "pdf_resume"] = Field(
+        default="raw_text",
+        description="How the source profile is being provided to the ingestion layer.",
+    )
+    source_file_base64: Optional[str] = Field(
+        default=None,
+        description="Base64-encoded PDF file content when source_type is pdf_resume.",
+    )
     target_job: str = Field(..., min_length=1, description="Target job description.")
     time_budget_weeks: int = Field(
         default=8,
@@ -47,5 +58,5 @@ class AnalyzeResponse(BaseModel):
     normalized_target_job: str
     nodes: List[RoadmapNode]
     edges: List[GraphEdge]
-    parser_used: str
+    ingestor_used: str
     strategy_used: str
