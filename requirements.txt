@@ -2,3 +2,5 @@ fastapi
 uvicorn
 pydantic
 pypdf
+google-genai
+python-dotenv

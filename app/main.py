@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.ingestion.pdf_resume_ingestor import PDFResumeIngestor
 from app.ingestion.raw_text_ingestor import RawTextIngestor
 from app.models import AnalyzeResponse, GenerationRequest
+from app.roadmap_generator.ai_generation_strategy import AIGenerationStrategy
 from app.roadmap_generator.dag_fallback_strategy import DAGFallbackStrategy
 
 # The API surface stays stable while the underlying generation strategy evolves.
@@ -65,12 +66,22 @@ def analyze_profile(request: GenerationRequest) -> AnalyzeResponse:
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
-    strategy = DAGFallbackStrategy()
-    analysis = strategy.generate(
-        source_text=normalized_source_text,
-        target_job=normalized_target_job,
-        time_budget_weeks=request.time_budget_weeks,
-    )
+    strategy = AIGenerationStrategy()
+
+    try:
+        analysis = strategy.generate(
+            source_text=normalized_source_text,
+            target_job=normalized_target_job,
+            time_budget_weeks=request.time_budget_weeks,
+        )
+    except Exception as error:
+        print(f"AI generation failed ({error}) - falling back to DAG strategy.")
+        strategy = DAGFallbackStrategy()
+        analysis = strategy.generate(
+            source_text=normalized_source_text,
+            target_job=normalized_target_job,
+            time_budget_weeks=request.time_budget_weeks,
+        )
 
     return AnalyzeResponse(
         normalized_source_text=normalized_source_text,
