@@ -1,7 +1,7 @@
-from abc import ABC, abstractmethod
 from typing import Dict, List, Set
 
 from app.models import GraphEdge, RoadmapNode
+from app.roadmap_generator.base import RoadmapGenerationStrategy
 
 
 SKILL_ALIASES: Dict[str, List[str]] = {
@@ -31,17 +31,6 @@ SKILL_DEPENDENCIES: Dict[str, List[str]] = {
     "Kubernetes": ["Docker", "Linux"],
     "CI/CD": ["Git"],
 }
-
-
-class RoadmapGenerationStrategy(ABC):
-    @abstractmethod
-    def generate(
-        self,
-        source_text: str,
-        target_job: str,
-        time_budget_weeks: int,
-    ) -> Dict[str, List]:
-        """Generate an ordered roadmap for the supplied profile and target job."""
 
 
 class DAGFallbackStrategy(RoadmapGenerationStrategy):

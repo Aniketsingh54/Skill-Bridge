@@ -3,9 +3,9 @@ from typing import Dict
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.engine import DAGFallbackStrategy
 from app.models import AnalyzeResponse, GenerationRequest
-from app.parsers import RawTextParser
+from app.parsers.raw_text_parser import RawTextParser
+from app.roadmap_generator.dag_fallback_strategy import DAGFallbackStrategy
 
 # The API surface stays stable while the underlying generation strategy evolves.
 app = FastAPI(
@@ -34,7 +34,6 @@ def analyze_profile(request: GenerationRequest) -> AnalyzeResponse:
     normalized_source_text = parser.parse(request.source_text)
     normalized_target_job = parser.parse(request.target_job)
 
-    
     strategy = DAGFallbackStrategy()
     analysis = strategy.generate(
         source_text=normalized_source_text,
