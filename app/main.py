@@ -3,10 +3,11 @@ from typing import Dict
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.models import AnalyzeResponse, GenerationRequest, RoadmapNode
+from app.engine import DAGFallbackStrategy
+from app.models import AnalyzeResponse, GenerationRequest
 from app.parsers import RawTextParser
 
-# PR1 keeps the API surface stable while the roadmap engine is still a stub.
+# The API surface stays stable while the underlying generation strategy evolves.
 app = FastAPI(
     title="Skill-Bridge Career Navigator API",
     version="0.1.0",
@@ -28,25 +29,24 @@ def healthcheck() -> Dict[str, str]:
 
 @app.post("/api/analyze", response_model=AnalyzeResponse)
 def analyze_profile(request: GenerationRequest) -> AnalyzeResponse:
-    # Component 1 hands normalized text to Component 2 in later PRs.
+    # Component 1 normalizes the raw text before the roadmap engine inspects it.
     parser = RawTextParser()
     normalized_source_text = parser.parse(request.source_text)
     normalized_target_job = parser.parse(request.target_job)
 
-    # Placeholder output preserves the response contract until the engine lands.
-    placeholder_roadmap = [
-        RoadmapNode(
-            node_id="foundation-review",
-            skill="Roadmap generation pending PR2 engine integration",
-            resource="DAGFallbackStrategy will populate this in the next PR.",
-            estimated_weeks=1,
-            rationale="PR1 validates request handling, parsing, and API wiring.",
-        )
-    ]
+    
+    strategy = DAGFallbackStrategy()
+    analysis = strategy.generate(
+        source_text=normalized_source_text,
+        target_job=normalized_target_job,
+        time_budget_weeks=request.time_budget_weeks,
+    )
 
     return AnalyzeResponse(
         normalized_source_text=normalized_source_text,
         normalized_target_job=normalized_target_job,
-        roadmap=placeholder_roadmap,
+        nodes=analysis["nodes"],
+        edges=analysis["edges"],
         parser_used=parser.__class__.__name__,
+        strategy_used=strategy.__class__.__name__,
     )

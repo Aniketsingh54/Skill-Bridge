@@ -37,8 +37,15 @@ class RoadmapNode(BaseModel):
     )
 
 
+class GraphEdge(BaseModel):
+    source: str = Field(..., description="Prerequisite node identifier.")
+    target: str = Field(..., description="Dependent node identifier.")
+
+
 class AnalyzeResponse(BaseModel):
     normalized_source_text: str
     normalized_target_job: str
-    roadmap: List[RoadmapNode]
+    nodes: List[RoadmapNode]
+    edges: List[GraphEdge]
     parser_used: str
+    strategy_used: str
