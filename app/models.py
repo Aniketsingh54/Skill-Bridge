@@ -6,17 +6,28 @@ from pydantic import BaseModel, Field
 class GenerationRequest(BaseModel):
     source_text: str = Field(
         default="",
-        description="Resume or profile text for raw_text ingestion.",
+        description="Profile text for raw_text ingestion.",
     )
-    source_type: Literal["raw_text", "pdf_resume"] = Field(
+    source_type: Literal["raw_text", "pdf_object"] = Field(
         default="raw_text",
         description="How the source profile is being provided to the ingestion layer.",
     )
     source_file_base64: Optional[str] = Field(
         default=None,
-        description="Base64-encoded PDF file content when source_type is pdf_resume.",
+        description="Base64-encoded PDF file content when source_type is pdf_object.",
     )
-    target_job: str = Field(..., min_length=1, description="Target job description.")
+    target_type: Literal["raw_text", "pdf_object"] = Field(
+        default="raw_text",
+        description="How the target job is being provided to the ingestion layer.",
+    )
+    target_file_base64: Optional[str] = Field(
+        default=None,
+        description="Base64-encoded PDF file content when target_type is pdf_object.",
+    )
+    target_job: str = Field(
+        default="",
+        description="Target job description when target_type is raw_text.",
+    )
     time_budget_weeks: int = Field(
         default=8,
         ge=1,

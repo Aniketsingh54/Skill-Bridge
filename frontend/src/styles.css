@@ -49,7 +49,7 @@ button {
       transparent 32px
     );
   background-size: auto, 180px 180px;
-  animation: drift-stripes 32s linear infinite;
+  animation: drift-stripes 12s linear infinite;
   pointer-events: none;
 }
 
@@ -65,7 +65,7 @@ button {
   border-radius: 50%;
   filter: blur(38px);
   opacity: 0.42;
-  animation-duration: 18s;
+  animation-duration: 10s;
   animation-iteration-count: infinite;
   animation-timing-function: ease-in-out;
 }
@@ -92,7 +92,7 @@ button {
   background-size: 42px 42px;
   mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.75), transparent 78%);
   opacity: 0.24;
-  animation: drift-grid 28s linear infinite;
+  animation: drift-grid 16s linear infinite;
 }
 
 .app-frame {

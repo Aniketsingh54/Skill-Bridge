@@ -27,7 +27,7 @@ type AnalyzeResponse = {
 type SampleProfile = {
   id: string;
   label: string;
-  source_type: "raw_text" | "pdf_resume";
+  source_type: "raw_text" | "pdf_object";
   source_text: string;
 };
 
@@ -43,9 +43,12 @@ type SampleData = {
 };
 
 type Screen = "landing" | "profile" | "target" | "result";
+type InputType = "raw_text" | "pdf_object";
 
-const API_URL = "/api/analyze";
-const SAMPLE_DATA_URL = "/api/sample-data";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+const API_URL = `${API_BASE_URL}/api/analyze`;
+const SAMPLE_DATA_URL = `${API_BASE_URL}/api/sample-data`;
+const MAX_TIME_BUDGET_WEEKS = 104;
 const loadingMessages = [
   "Parsing current profile...",
   "Understanding target role...",
@@ -57,12 +60,14 @@ const loadingMessages = [
 
 function App() {
   const [screen, setScreen] = useState<Screen>("landing");
-  const [sourceType, setSourceType] = useState<"raw_text" | "pdf_resume">("raw_text");
+  const [sourceType, setSourceType] = useState<InputType>("raw_text");
   const [sourceText, setSourceText] = useState("");
   const [targetJob, setTargetJob] = useState("");
+  const [targetType, setTargetType] = useState<InputType>("raw_text");
   const [jobId, setJobId] = useState("");
   const [timeBudgetWeeks, setTimeBudgetWeeks] = useState(8);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [targetPdfFile, setTargetPdfFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingIndex, setLoadingIndex] = useState(0);
   const [error, setError] = useState("");
@@ -103,9 +108,28 @@ function App() {
     void loadSamples();
   }, []);
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const getTimeBudgetError = (weeks: number) => {
+    if (!Number.isInteger(weeks) || weeks < 1) {
+      return "Time budget must be at least 1 week.";
+    }
+
+    if (weeks > MAX_TIME_BUDGET_WEEKS) {
+      return `Time budget cannot exceed ${MAX_TIME_BUDGET_WEEKS} weeks.`;
+    }
+
+    return "";
+  };
+
+  const handleSourceFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const nextFile = event.target.files?.[0] ?? null;
     setPdfFile(nextFile);
+    setResult(null);
+    setError("");
+  };
+
+  const handleTargetFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const nextFile = event.target.files?.[0] ?? null;
+    setTargetPdfFile(nextFile);
     setResult(null);
     setError("");
   };
@@ -126,23 +150,36 @@ function App() {
     });
 
   const handleGenerate = async () => {
+    const timeBudgetError = getTimeBudgetError(timeBudgetWeeks);
+    if (timeBudgetError) {
+      setError(timeBudgetError);
+      setScreen("profile");
+      return;
+    }
+
     setLoading(true);
     setError("");
     setResult(null);
 
     try {
+      const normalizedTargetJob =
+        targetType === "raw_text"
+          ? jobId.trim()
+            ? `Job ID: ${jobId.trim()}\n\n${targetJob}`
+            : targetJob
+          : "";
+
       const payload: Record<string, unknown> = {
         source_type: sourceType,
+        target_type: targetType,
         source_text: sourceType === "raw_text" ? sourceText : "",
-        target_job: jobId.trim()
-          ? `Job ID: ${jobId.trim()}\n\n${targetJob}`
-          : targetJob,
+        target_job: normalizedTargetJob,
         time_budget_weeks: timeBudgetWeeks,
       };
 
-      if (sourceType === "pdf_resume") {
+      if (sourceType === "pdf_object") {
         if (!pdfFile) {
-          throw new Error("Please choose a PDF resume before generating the roadmap.");
+          throw new Error("Please choose a PDF object before generating the roadmap.");
         }
 
         payload.source_file_base64 = await toBase64(pdfFile);
@@ -151,7 +188,17 @@ function App() {
       }
 
       if (!targetJob.trim()) {
-        throw new Error("Please paste a target job description.");
+        if (targetType === "raw_text") {
+          throw new Error("Please paste a target job description.");
+        }
+      }
+
+      if (targetType === "pdf_object") {
+        if (!targetPdfFile) {
+          throw new Error("Please choose a PDF job description before generating the roadmap.");
+        }
+
+        payload.target_file_base64 = await toBase64(targetPdfFile);
       }
 
       const response = await fetch(API_URL, {
@@ -200,8 +247,10 @@ function App() {
     }
 
     setSelectedJobId(job.id);
+    setTargetType("raw_text");
     setJobId(job.id);
     setTargetJob(job.job_text);
+    setTargetPdfFile(null);
     setResult(null);
   };
 
@@ -236,13 +285,19 @@ function App() {
   };
 
   const goToTargetStep = () => {
+    const timeBudgetError = getTimeBudgetError(timeBudgetWeeks);
+    if (timeBudgetError) {
+      setError(timeBudgetError);
+      return;
+    }
+
     if (sourceType === "raw_text" && !sourceText.trim()) {
       setError("Add the user profile first so we know the current state.");
       return;
     }
 
-    if (sourceType === "pdf_resume" && !pdfFile) {
-      setError("Upload a PDF resume before moving to the target role.");
+    if (sourceType === "pdf_object" && !pdfFile) {
+      setError("Upload a PDF object before moving to the target role.");
       return;
     }
 
@@ -341,21 +396,16 @@ function App() {
                   <div className="state-chip">From</div>
                   <div>
                     <h3>Your Starting Point</h3>
-                    <p>Resume text, profile summary, or an uploaded PDF.</p>
+                    <p>Profile text or an uploaded PDF object.</p>
                   </div>
                 </div>
 
                 <div className="field-row">
                   <label className="field">
                     <span>Input Type</span>
-                    <select
-                      value={sourceType}
-                      onChange={(event) =>
-                        setSourceType(event.target.value as "raw_text" | "pdf_resume")
-                      }
-                    >
+                    <select value={sourceType} onChange={(event) => setSourceType(event.target.value as InputType)}>
                       <option value="raw_text">Paste profile text</option>
-                      <option value="pdf_resume">Attach PDF resume</option>
+                      <option value="pdf_object">Attach PDF object</option>
                     </select>
                   </label>
 
@@ -363,7 +413,7 @@ function App() {
                     <span>Time Budget</span>
                     <input
                       min={1}
-                      max={52}
+                      max={MAX_TIME_BUDGET_WEEKS}
                       type="number"
                       value={timeBudgetWeeks}
                       onChange={(event) => setTimeBudgetWeeks(Number(event.target.value))}
@@ -400,11 +450,11 @@ function App() {
                   </label>
                 ) : (
                   <label className="upload-card">
-                    <span className="upload-title">Attach Resume</span>
+                    <span className="upload-title">Attach PDF Object</span>
                     <span className="upload-copy">
                       Upload a PDF and let the ingestion layer pull out the meaningful text.
                     </span>
-                    <input accept="application/pdf" onChange={handleFileChange} type="file" />
+                    <input accept="application/pdf" onChange={handleSourceFileChange} type="file" />
                     <strong>{pdfFile ? pdfFile.name : "No file chosen yet"}</strong>
                   </label>
                 )}
@@ -459,6 +509,14 @@ function App() {
 
                 <div className="field-row">
                   <label className="field">
+                    <span>Target Input</span>
+                    <select value={targetType} onChange={(event) => setTargetType(event.target.value as InputType)}>
+                      <option value="raw_text">Paste job text</option>
+                      <option value="pdf_object">Attach JD PDF</option>
+                    </select>
+                  </label>
+
+                  <label className="field">
                     <span>Job ID</span>
                     <input
                       type="text"
@@ -468,6 +526,9 @@ function App() {
                     />
                   </label>
 
+                </div>
+
+                <div className="field-row">
                   {sampleData ? (
                     <label className="field">
                       <span>Sample Job</span>
@@ -488,15 +549,26 @@ function App() {
                   )}
                 </div>
 
-                <label className="field">
-                  <span>Target Job Text</span>
-                  <textarea
-                    value={targetJob}
-                    onChange={(event) => setTargetJob(event.target.value)}
-                    placeholder="Paste the target job description or role brief."
-                    rows={14}
-                  />
-                </label>
+                {targetType === "raw_text" ? (
+                  <label className="field">
+                    <span>Target Job Text</span>
+                    <textarea
+                      value={targetJob}
+                      onChange={(event) => setTargetJob(event.target.value)}
+                      placeholder="Paste the target job description or role brief."
+                      rows={14}
+                    />
+                  </label>
+                ) : (
+                  <label className="upload-card">
+                    <span className="upload-title">Attach Job Description</span>
+                    <span className="upload-copy">
+                      Upload a PDF job description and let the ingestion layer extract the role details.
+                    </span>
+                    <input accept="application/pdf" onChange={handleTargetFileChange} type="file" />
+                    <strong>{targetPdfFile ? targetPdfFile.name : "No file chosen yet"}</strong>
+                  </label>
+                )}
               </div>
 
               <aside className="step-aside">

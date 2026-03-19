@@ -23,6 +23,8 @@ Quick Start:
   npm install
   npm run dev -- --host
   ```
+  On some Linux Wayland setups, launching Vite through the package-manager shim can fail before the dev server starts. If that happens, this project's npm scripts now call Vite through `node` directly, which avoids the Qt/Wayland launcher issue.
+  If the frontend is calling the backend directly instead of through the Vite `/api` proxy, set `VITE_API_BASE_URL` in the frontend environment and add that frontend origin to `FRONTEND_ORIGINS` for the backend CORS allowlist.
 - Test Commands:
   ```bash
   source venv/bin/activate

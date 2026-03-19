@@ -7,10 +7,10 @@ from pypdf import PdfReader
 from app.ingestion.base import AbstractIngestor
 
 
-class PDFResumeIngestor(AbstractIngestor):
+class PDFObjectIngestor(AbstractIngestor):
     def ingest(self, source: str, file_bytes: Optional[bytes] = None) -> str:
         if not file_bytes:
-            raise ValueError("A base64-encoded PDF file is required when source_type is pdf_resume.")
+            raise ValueError("A base64-encoded PDF file is required when PDF ingestion is selected.")
 
         reader = PdfReader(BytesIO(file_bytes))
         extracted_pages = []
@@ -20,7 +20,7 @@ class PDFResumeIngestor(AbstractIngestor):
 
         extracted_text = "\n".join(extracted_pages).strip()
         if not extracted_text:
-            raise ValueError("Could not extract text from the uploaded PDF resume.")
+            raise ValueError("Could not extract text from the uploaded PDF.")
 
         cleaned_text = extracted_text.replace("\r", "\n")
         cleaned_text = re.sub(r"\n{2,}", "\n", cleaned_text)
