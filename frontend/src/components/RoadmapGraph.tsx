@@ -113,6 +113,18 @@ function getRootNodeIds(nodes: GraphNode[], edges: GraphEdge[]) {
 }
 
 function RoadmapGraph({ nodes, edges }: RoadmapGraphProps) {
+  if (nodes.length === 0) {
+    return (
+      <section className="graph-scene graph-empty-scene">
+        <p className="graph-kicker">Roadmap Graph</p>
+        <h3>No nodes match the current filter.</h3>
+        <p className="graph-empty-copy">
+          Try clearing the roadmap filter or choose a different sample input.
+        </p>
+      </section>
+    );
+  }
+
   const [activeNodeId, setActiveNodeId] = useState(nodes[0]?.node_id ?? null);
   const { positioned, width, height } = useMemo(() => positionNodes(nodes, edges), [nodes, edges]);
   const positionedMap = new Map(positioned.map((node) => [node.node_id, node]));

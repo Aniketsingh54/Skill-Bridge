@@ -24,11 +24,26 @@ type AnalyzeResponse = {
   strategy_used: string;
 };
 
-const demoProfile = `Aniket is a backend-focused developer with experience in Python, Git, SQL, and building APIs using FastAPI. Comfortable shipping small projects and collaborating through Git workflows.`;
+type SampleProfile = {
+  id: string;
+  label: string;
+  source_type: "raw_text" | "pdf_resume";
+  source_text: string;
+};
 
-const demoJob = `We need a backend engineer with Python, FastAPI, Docker, Kubernetes, CI/CD, AWS, and PostgreSQL experience.`;
+type SampleJob = {
+  id: string;
+  label: string;
+  job_text: string;
+};
+
+type SampleData = {
+  profiles: SampleProfile[];
+  jobs: SampleJob[];
+};
 
 const API_URL = "/api/analyze";
+const SAMPLE_DATA_URL = "/api/sample-data";
 const loadingMessages = [
   "Parsing current profile...",
   "Understanding target role...",
@@ -49,6 +64,10 @@ function App() {
   const [loadingIndex, setLoadingIndex] = useState(0);
   const [error, setError] = useState("");
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
+  const [sampleData, setSampleData] = useState<SampleData | null>(null);
+  const [selectedProfileId, setSelectedProfileId] = useState("");
+  const [selectedJobId, setSelectedJobId] = useState("");
+  const [roadmapFilter, setRoadmapFilter] = useState("");
 
   useEffect(() => {
     if (!loading) {
@@ -63,11 +82,39 @@ function App() {
     return () => window.clearInterval(interval);
   }, [loading]);
 
+  useEffect(() => {
+    const loadSamples = async () => {
+      try {
+        const response = await fetch(SAMPLE_DATA_URL);
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as SampleData;
+        setSampleData(payload);
+      } catch {
+        // The UI can still function without remote sample loading.
+      }
+    };
+
+    void loadSamples();
+  }, []);
+
   const loadDemoData = () => {
-    setSourceType("raw_text");
-    setSourceText(demoProfile);
-    setTargetJob(demoJob);
-    setJobId("backend-engineer-demo");
+    const profile = sampleData?.profiles[0];
+    const job = sampleData?.jobs[0];
+
+    if (!profile || !job) {
+      setError("Sample data is unavailable right now.");
+      return;
+    }
+
+    setSourceType(profile.source_type);
+    setSourceText(profile.source_text);
+    setTargetJob(job.job_text);
+    setJobId(job.id);
+    setSelectedProfileId(profile.id);
+    setSelectedJobId(job.id);
     setPdfFile(null);
     setResult(null);
     setError("");
@@ -147,6 +194,56 @@ function App() {
       setLoading(false);
     }
   };
+
+  const applySelectedProfile = (profileId: string) => {
+    const profile = sampleData?.profiles.find((item) => item.id === profileId);
+    if (!profile) {
+      return;
+    }
+
+    setSelectedProfileId(profile.id);
+    setSourceType(profile.source_type);
+    setSourceText(profile.source_text);
+    setPdfFile(null);
+    setResult(null);
+  };
+
+  const applySelectedJob = (jobValue: string) => {
+    const job = sampleData?.jobs.find((item) => item.id === jobValue);
+    if (!job) {
+      return;
+    }
+
+    setSelectedJobId(job.id);
+    setJobId(job.id);
+    setTargetJob(job.job_text);
+    setResult(null);
+  };
+
+  const filteredResult = (() => {
+    if (!result || !roadmapFilter.trim()) {
+      return result;
+    }
+
+    const query = roadmapFilter.trim().toLowerCase();
+    const visibleNodes = result.nodes.filter(
+      (node) =>
+        node.skill.toLowerCase().includes(query) ||
+        node.node_id.toLowerCase().includes(query) ||
+        node.resource.toLowerCase().includes(query) ||
+        (node.rationale ?? "").toLowerCase().includes(query),
+    );
+    const visibleIds = new Set(visibleNodes.map((node) => node.node_id));
+    const visibleEdges = result.edges.filter(
+      (edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target),
+    );
+
+    return {
+      ...result,
+      nodes: visibleNodes,
+      edges: visibleEdges,
+    };
+  })();
 
   return (
     <div className="page-shell">
@@ -250,6 +347,40 @@ function App() {
               </div>
             </div>
 
+            {sampleData ? (
+              <div className="field-row">
+                <label className="field">
+                  <span>Sample Profile</span>
+                  <select
+                    value={selectedProfileId}
+                    onChange={(event) => applySelectedProfile(event.target.value)}
+                  >
+                    <option value="">Choose sample profile</option>
+                    {sampleData.profiles.map((profile) => (
+                      <option key={profile.id} value={profile.id}>
+                        {profile.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="field">
+                  <span>Sample Job</span>
+                  <select
+                    value={selectedJobId}
+                    onChange={(event) => applySelectedJob(event.target.value)}
+                  >
+                    <option value="">Choose sample job</option>
+                    {sampleData.jobs.map((job) => (
+                      <option key={job.id} value={job.id}>
+                        {job.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            ) : null}
+
             <label className="field">
               <span>Target Job Text</span>
               <textarea
@@ -299,8 +430,21 @@ function App() {
               </div>
             ) : (
               <div className="result-stack">
+                <label className="field roadmap-filter">
+                  <span>Search / Filter Roadmap</span>
+                  <input
+                    type="text"
+                    value={roadmapFilter}
+                    onChange={(event) => setRoadmapFilter(event.target.value)}
+                    placeholder="Filter by skill, rationale, or resource"
+                  />
+                </label>
+
                 <section>
-                  <RoadmapGraph edges={result.edges} nodes={result.nodes} />
+                  <RoadmapGraph
+                    edges={filteredResult?.edges ?? []}
+                    nodes={filteredResult?.nodes ?? []}
+                  />
                 </section>
 
               </div>

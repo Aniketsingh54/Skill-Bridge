@@ -379,6 +379,17 @@ select {
   border: 1px solid rgba(16, 32, 54, 0.08);
 }
 
+.graph-empty-scene {
+  display: grid;
+  gap: 8px;
+  place-items: start;
+}
+
+.graph-empty-copy {
+  margin: 0;
+  color: #607084;
+}
+
 .graph-topbar {
   display: flex;
   justify-content: space-between;

@@ -1,68 +1,54 @@
 # Skill-Bridge Career Navigator
 
-Skill-Bridge compares a learner's current profile against a target role and generates a roadmap of skills to learn next.
+Candidate Name:
+Vishwanath
 
-## Stack
-- FastAPI backend
-- React + Vite frontend
-- Gemini-powered roadmap generation with DAG fallback
+Scenario Chosen:
+Skill-Bridge Career Navigator
 
-## Run The Backend
-```bash
-source venv/bin/activate
-pip install -r requirements.txt
-python main.py
-```
+Estimated Time Spent:
+Approximately 5-6 hours
 
-Backend docs:
-`http://localhost:8080/docs`
+Quick Start:
+- Prerequisites:
+  Python 3.12+, Node.js 20+, npm
+- Run Commands:
+  ```bash
+  source venv/bin/activate
+  pip install -r requirements.txt
+  python main.py
+  ```
+  ```bash
+  cd frontend
+  npm install
+  npm run dev -- --host
+  ```
+- Test Commands:
+  ```bash
+  source venv/bin/activate
+  pytest -v test_main.py
+  ```
 
-## Run The Frontend
-```bash
-cd frontend
-npm install
-npm run dev -- --host
-```
+AI Disclosure:
+- Did you use an AI assistant (Copilot, ChatGPT, etc.)? (Yes/No)
+  Yes
+- How did you verify the suggestions?
+  I checked the generated roadmap against the backend response contract, manually exercised the AI path and DAG fallback path, and added API-level tests for the happy path and fallback behavior.
+- Give one example of a suggestion you rejected or changed:
+  I rejected the idea of scraping LinkedIn profiles directly and replaced it with a cleaner ingestion approach using raw text and PDF resume parsing.
 
-Frontend dev server:
-`http://localhost:5173`
+Tradeoffs & Prioritization:
+- What did you cut to stay within the 4-6 hour limit?
+  I skipped authentication, persistence, multi-job aggregation, OCR for scanned PDFs, and a richer prerequisite ontology backed by a graph database.
+- What would you build next if you had more time?
+  I would improve dependency quality, add support for multiple job descriptions, separate inferred prerequisites from direct target skills, and refine the graph UX further.
+- Known limitations:
+  AI-generated edges can still be incomplete or overly opinionated, the DAG fallback covers only a limited in-memory skill map, and PDF support assumes text-extractable resumes rather than scanned images.
 
-## Environment Variables
-Create `.env` in the project root:
+Project Notes:
+- Synthetic dataset is included in [sample_data.json](/mnt/c/Users/Vishwanath/palo/sample_data.json).
+- Backend docs are available at `http://localhost:8080/docs`.
+- The frontend calls the backend through the Vite `/api` proxy during development.
 
-```env
-GEMINI_API_KEY=your_key_here
-GEMINI_MODEL=gemini-3.1-flash-lite-preview
-```
-
-## Testing
-Install the extra test dependencies if needed:
-
-```bash
-source venv/bin/activate
-pip install pytest httpx
-pytest
-```
-
-## Architecture
-- Component 1: ingestion layer
-  - raw text ingestion
-  - PDF resume ingestion
-- Component 2: roadmap generation
-  - Gemini AI strategy
-  - DAG fallback strategy
-
-## Tradeoffs
-- To stay within the project timebox, the fallback dependency model is an in-memory DAG instead of a graph database like Neo4j.
-- AI-generated edges can still vary in quality depending on model output.
-- LinkedIn scraping was intentionally avoided because it is brittle and policy-sensitive.
-- Authentication, persistence, and user accounts were not implemented.
-
-## Demo Flow
-1. Paste profile text or upload a PDF resume.
-2. Paste the target job description.
-3. Generate the roadmap and inspect the graph.
-4. Break the Gemini config in `.env` and generate again to show the DAG fallback still works.
-
-## Video
-Add your unlisted demo video link here.
+Video:
+Add your unlisted demo recording link here.

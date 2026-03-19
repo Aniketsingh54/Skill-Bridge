@@ -1,0 +1,33 @@
+{
+  "profiles": [
+    {
+      "id": "recent-grad-backend",
+      "label": "Recent Graduate - Backend",
+      "source_type": "raw_text",
+      "source_text": "Aarav is a recent graduate with experience in Python, Git, SQL, and building small APIs with FastAPI. He has shipped academic projects, worked with teammates using GitHub, and is comfortable reading backend code."
+    },
+    {
+      "id": "career-switcher-data",
+      "label": "Career Switcher - Analytics to Platform",
+      "source_type": "raw_text",
+      "source_text": "Maya has 3 years of analytics experience using SQL, dashboards, spreadsheets, and stakeholder reporting. She is now transitioning toward backend and platform engineering, with some beginner Python experience."
+    }
+  ],
+  "jobs": [
+    {
+      "id": "backend-platform-01",
+      "label": "Backend Platform Engineer",
+      "job_text": "We need a backend engineer with Python, FastAPI, Docker, Kubernetes, CI/CD, AWS, and PostgreSQL experience."
+    },
+    {
+      "id": "cloud-engineer-01",
+      "label": "Cloud Engineer",
+      "job_text": "Looking for a cloud engineer with Linux, Docker, Kubernetes, AWS, Terraform, CI/CD, and observability fundamentals."
+    },
+    {
+      "id": "data-platform-01",
+      "label": "Data Platform Engineer",
+      "job_text": "Need a data platform engineer with Python, SQL, PostgreSQL, Docker, AWS, orchestration, and data pipeline reliability experience."
+    }
+  ]
+}

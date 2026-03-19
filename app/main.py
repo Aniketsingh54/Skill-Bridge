@@ -1,5 +1,7 @@
 import base64
 import binascii
+import json
+from pathlib import Path
 from typing import Dict
 
 from fastapi import FastAPI, HTTPException
@@ -10,6 +12,9 @@ from app.ingestion.raw_text_ingestor import RawTextIngestor
 from app.models import AnalyzeResponse, GenerationRequest
 from app.roadmap_generator.ai_generation_strategy import AIGenerationStrategy
 from app.roadmap_generator.dag_fallback_strategy import DAGFallbackStrategy
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+SAMPLE_DATA_PATH = BASE_DIR / "sample_data.json"
 
 # The API surface stays stable while the underlying generation strategy evolves.
 app = FastAPI(
@@ -34,6 +39,12 @@ app.add_middleware(
 @app.get("/health")
 def healthcheck() -> Dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/sample-data")
+def get_sample_data() -> Dict[str, object]:
+    with SAMPLE_DATA_PATH.open("r", encoding="utf-8") as sample_file:
+        return json.load(sample_file)
 
 
 @app.post("/api/analyze", response_model=AnalyzeResponse)
