@@ -24,14 +24,39 @@ type PositionedNode = GraphNode & {
   y: number;
 };
 
-const NODE_WIDTH = 280;
-const NODE_HEIGHT = 124;
-const START_WIDTH = 240;
-const START_HEIGHT = 92;
-const H_GAP = 56;
-const V_GAP = 110;
-const PAD_X = 40;
-const PAD_Y = 40;
+const NODE_WIDTH = 220;
+const NODE_HEIGHT = 96;
+const START_WIDTH = 180;
+const START_HEIGHT = 68;
+const H_GAP = 40;
+const V_GAP = 64;
+const PAD_X = 28;
+const PAD_Y = 28;
+
+function splitLabel(label: string, maxLineLength = 18) {
+  const words = label.split(" ");
+  const lines: string[] = [];
+  let current = "";
+
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length <= maxLineLength) {
+      current = next;
+      continue;
+    }
+
+    if (current) {
+      lines.push(current);
+    }
+    current = word;
+  }
+
+  if (current) {
+    lines.push(current);
+  }
+
+  return lines.slice(0, 2);
+}
 
 function buildDepthMap(nodes: GraphNode[], edges: GraphEdge[]) {
   const incoming = new Map<string, string[]>();
@@ -72,6 +97,25 @@ function buildDepthMap(nodes: GraphNode[], edges: GraphEdge[]) {
 }
 
 function positionNodes(nodes: GraphNode[], edges: GraphEdge[]) {
+  const minColumns = 2;
+
+  if (edges.length === 0) {
+    const totalColumns = Math.max(nodes.length, minColumns);
+    const width =
+      PAD_X * 2 + totalColumns * NODE_WIDTH + Math.max(totalColumns - 1, 0) * H_GAP;
+    const rowWidth = nodes.length * NODE_WIDTH + Math.max(nodes.length - 1, 0) * H_GAP;
+    const rowStartX = (width - rowWidth) / 2;
+    const y = PAD_Y + START_HEIGHT + 84;
+    const positioned = nodes.map((node, index) => ({
+      ...node,
+      depth: 0,
+      x: rowStartX + index * (NODE_WIDTH + H_GAP),
+      y,
+    }));
+    const height = y + NODE_HEIGHT + PAD_Y;
+    return { positioned, width, height };
+  }
+
   const depthMap = buildDepthMap(nodes, edges);
   const rows = new Map<number, GraphNode[]>();
 
@@ -82,7 +126,10 @@ function positionNodes(nodes: GraphNode[], edges: GraphEdge[]) {
     rows.set(depth, row);
   }
 
-  const maxColumns = Math.max(...Array.from(rows.values()).map((row) => row.length), 1);
+  const maxColumns = Math.max(
+    ...Array.from(rows.values()).map((row) => row.length),
+    minColumns,
+  );
   const width = PAD_X * 2 + maxColumns * NODE_WIDTH + (maxColumns - 1) * H_GAP;
   const positioned: PositionedNode[] = [];
 
@@ -110,6 +157,23 @@ function positionNodes(nodes: GraphNode[], edges: GraphEdge[]) {
 function getRootNodeIds(nodes: GraphNode[], edges: GraphEdge[]) {
   const targets = new Set(edges.map((edge) => edge.target));
   return nodes.filter((node) => !targets.has(node.node_id)).map((node) => node.node_id);
+}
+
+function getDistributedStartX(index: number, total: number, startLeft: number) {
+  if (total <= 1) {
+    return startLeft + START_WIDTH / 2;
+  }
+
+  const inset = 22;
+  const usableWidth = START_WIDTH - inset * 2;
+  const step = usableWidth / (total - 1);
+  return startLeft + inset + index * step;
+}
+
+function getArrowHeadPoints(targetX: number, targetY: number, size = 7) {
+  const tipY = targetY - 4;
+  const baseY = tipY - size;
+  return `${targetX},${tipY} ${targetX - size},${baseY} ${targetX + size},${baseY}`;
 }
 
 function RoadmapGraph({ nodes, edges }: RoadmapGraphProps) {
@@ -154,6 +218,10 @@ function RoadmapGraph({ nodes, edges }: RoadmapGraphProps) {
               <stop offset="0%" stopColor="#ffb703" />
               <stop offset="100%" stopColor="#0f766e" />
             </linearGradient>
+            <linearGradient id="roadRootEdge" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#1d4ed8" />
+              <stop offset="100%" stopColor="#0f766e" />
+            </linearGradient>
             <linearGradient id="roadStart" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#0f766e" />
               <stop offset="100%" stopColor="#1d4ed8" />
@@ -171,36 +239,42 @@ function RoadmapGraph({ nodes, edges }: RoadmapGraphProps) {
             <rect
               width={START_WIDTH}
               height={START_HEIGHT}
-              rx="28"
+              rx="22"
               className="graph-start-node"
               filter="url(#roadShadow)"
             />
-            <text className="graph-start-label" x="22" y="30">
+            <text className="graph-start-label" x="18" y="24">
               You are here
             </text>
-            <text className="graph-start-title" x="22" y="61">
+            <text className="graph-start-title" x="18" y="48">
               Current State
             </text>
           </g>
 
-          {rootNodeIds.map((rootId) => {
+          {rootNodeIds.map((rootId, index) => {
             const rootNode = positionedMap.get(rootId);
             if (!rootNode) {
               return null;
             }
 
-            const sx = width / 2;
+            const sx = getDistributedStartX(index, rootNodeIds.length, startX);
             const sy = startY + START_HEIGHT;
             const tx = rootNode.x + NODE_WIDTH / 2;
             const ty = rootNode.y;
-            const midY = sy + 38;
+            const endY = ty - 12;
+            const midY = sy + 28;
 
             return (
-              <path
-                key={`root-${rootId}`}
-                className="graph-link"
-                d={`M ${sx} ${sy} C ${sx} ${midY}, ${tx} ${midY}, ${tx} ${ty}`}
-              />
+              <g key={`root-${rootId}`}>
+                <path
+                  className="graph-root-link"
+                  d={`M ${sx} ${sy} L ${sx} ${midY} L ${tx} ${midY} L ${tx} ${endY}`}
+                />
+                <polygon
+                  className="graph-root-arrowhead"
+                  points={getArrowHeadPoints(tx, ty)}
+                />
+              </g>
             );
           })}
 
@@ -216,41 +290,57 @@ function RoadmapGraph({ nodes, edges }: RoadmapGraphProps) {
             const sy = sourceNode.y + NODE_HEIGHT;
             const tx = targetNode.x + NODE_WIDTH / 2;
             const ty = targetNode.y;
-            const midY = sy + 44;
+            const endY = ty - 12;
+            const midY = sy + 28;
 
             return (
-              <path
-                key={`${edge.source}-${edge.target}`}
-                className="graph-link"
-                d={`M ${sx} ${sy} C ${sx} ${midY}, ${tx} ${midY}, ${tx} ${ty}`}
-              />
+              <g key={`${edge.source}-${edge.target}`}>
+                <path
+                  className="graph-link"
+                  d={`M ${sx} ${sy} L ${sx} ${midY} L ${tx} ${midY} L ${tx} ${endY}`}
+                />
+                <polygon
+                  className="graph-arrowhead"
+                  points={getArrowHeadPoints(tx, ty)}
+                />
+              </g>
             );
           })}
 
           {positioned.map((node) => (
-            <g
-              key={node.node_id}
-              transform={`translate(${node.x}, ${node.y})`}
-              onMouseEnter={() => setActiveNodeId(node.node_id)}
-              onClick={() => setActiveNodeId(node.node_id)}
-            >
-              <rect
-                width={NODE_WIDTH}
-                height={NODE_HEIGHT}
-                rx="30"
-                className={`graph-node${activeNodeId === node.node_id ? " graph-node-active" : ""}`}
-                filter="url(#roadShadow)"
-              />
-              <text className="graph-node-title" x="22" y="48">
-                {node.skill}
-              </text>
-              <text className="graph-node-weeks" x="22" y="79">
-                {`${node.estimated_weeks} week(s)`}
-              </text>
-              <text className="graph-node-code" x="22" y="105">
-                {node.node_id}
-              </text>
-            </g>
+            (() => {
+              const labelLines = splitLabel(node.skill);
+
+              return (
+                <g
+                  key={node.node_id}
+                  transform={`translate(${node.x}, ${node.y})`}
+                  onMouseEnter={() => setActiveNodeId(node.node_id)}
+                  onClick={() => setActiveNodeId(node.node_id)}
+                >
+                  <rect
+                    width={NODE_WIDTH}
+                    height={NODE_HEIGHT}
+                    rx="24"
+                    className={`graph-node${activeNodeId === node.node_id ? " graph-node-active" : ""}`}
+                    filter="url(#roadShadow)"
+                  />
+                  <text className="graph-node-title" x="18" y="34">
+                    {labelLines.map((line, index) => (
+                      <tspan key={`${node.node_id}-${line}`} x="18" dy={index === 0 ? 0 : 20}>
+                        {line}
+                      </tspan>
+                    ))}
+                  </text>
+                  <text className="graph-node-weeks" x="18" y="72">
+                    {`${node.estimated_weeks} week(s)`}
+                  </text>
+                  <text className="graph-node-code" x="18" y="88">
+                    {node.node_id}
+                  </text>
+                </g>
+              );
+            })()
           ))}
         </svg>
 

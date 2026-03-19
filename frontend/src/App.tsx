@@ -42,18 +42,21 @@ type SampleData = {
   jobs: SampleJob[];
 };
 
+type Screen = "landing" | "profile" | "target" | "result";
+
 const API_URL = "/api/analyze";
 const SAMPLE_DATA_URL = "/api/sample-data";
 const loadingMessages = [
   "Parsing current profile...",
   "Understanding target role...",
   "Mapping skill gaps...",
-  "Finding the cheapest path forward...",
+  "Finding the cheapest way forward...",
   "Generating roadmap nodes...",
   "Connecting prerequisite edges...",
 ];
 
 function App() {
+  const [screen, setScreen] = useState<Screen>("landing");
   const [sourceType, setSourceType] = useState<"raw_text" | "pdf_resume">("raw_text");
   const [sourceText, setSourceText] = useState("");
   const [targetJob, setTargetJob] = useState("");
@@ -99,26 +102,6 @@ function App() {
 
     void loadSamples();
   }, []);
-
-  const loadDemoData = () => {
-    const profile = sampleData?.profiles[0];
-    const job = sampleData?.jobs[0];
-
-    if (!profile || !job) {
-      setError("Sample data is unavailable right now.");
-      return;
-    }
-
-    setSourceType(profile.source_type);
-    setSourceText(profile.source_text);
-    setTargetJob(job.job_text);
-    setJobId(job.id);
-    setSelectedProfileId(profile.id);
-    setSelectedJobId(job.id);
-    setPdfFile(null);
-    setResult(null);
-    setError("");
-  };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const nextFile = event.target.files?.[0] ?? null;
@@ -186,10 +169,12 @@ function App() {
 
       const data = (await response.json()) as AnalyzeResponse;
       setResult(data);
+      setScreen("result");
     } catch (caughtError) {
       const message =
         caughtError instanceof Error ? caughtError.message : "Something went wrong.";
       setError(message);
+      setScreen("target");
     } finally {
       setLoading(false);
     }
@@ -245,211 +230,343 @@ function App() {
     };
   })();
 
+  const goToProfileStep = () => {
+    setError("");
+    setScreen("profile");
+  };
+
+  const goToTargetStep = () => {
+    if (sourceType === "raw_text" && !sourceText.trim()) {
+      setError("Add the user profile first so we know the current state.");
+      return;
+    }
+
+    if (sourceType === "pdf_resume" && !pdfFile) {
+      setError("Upload a PDF resume before moving to the target role.");
+      return;
+    }
+
+    setError("");
+    setScreen("target");
+  };
+
   return (
     <div className="page-shell">
       <div className="page-backdrop" />
-      <main className="app-frame">
-        <section className="hero-band">
-          <p className="eyebrow">Skill-Bridge Career Navigator</p>
-          <h1>Turn a profile into a skill graph with clear next steps.</h1>
-          <p className="hero-copy">
-            Compare where someone is now against where they want to go next, then turn
-            that gap into a dependency-aware learning map.
+      <div className="ambient-orb ambient-orb-one" />
+      <div className="ambient-orb ambient-orb-two" />
+      <div className="ambient-grid" />
+
+      {loading ? (
+        <section className="fullscreen-loader">
+          <div className="fullscreen-loader__visual">
+            <div className="loading-ring loading-ring-a" />
+            <div className="loading-ring loading-ring-b" />
+            <div className="loading-core" />
+          </div>
+          <p className="fullscreen-loader__eyebrow">Roadmap Engine</p>
+          <h2>{loadingMessages[loadingIndex]}</h2>
+          <p className="fullscreen-loader__copy">
+            We&apos;re turning the current profile into a cleaner path toward the target role.
           </p>
-        </section>
-
-        <section className="split-stage">
-          <div className="state-panel from-panel">
-            <div className="state-chip">From</div>
-            <h2>Current State</h2>
-            <p className="state-copy">
-              Capture who the user is today with either pasted text or an uploaded resume.
-            </p>
-
-            <div className="field-row">
-              <label className="field">
-                <span>Input Type</span>
-                <select
-                  value={sourceType}
-                  onChange={(event) =>
-                    setSourceType(event.target.value as "raw_text" | "pdf_resume")
-                  }
-                >
-                  <option value="raw_text">Paste profile text</option>
-                  <option value="pdf_resume">Attach PDF resume</option>
-                </select>
-              </label>
-
-              <label className="field">
-                <span>Time Budget</span>
-                <input
-                  min={1}
-                  max={52}
-                  type="number"
-                  value={timeBudgetWeeks}
-                  onChange={(event) => setTimeBudgetWeeks(Number(event.target.value))}
-                />
-              </label>
-            </div>
-
-            {sourceType === "raw_text" ? (
-              <label className="field">
-                <span>Profile Text</span>
-                <textarea
-                  value={sourceText}
-                  onChange={(event) => setSourceText(event.target.value)}
-                  placeholder="Paste resume text, profile summary, achievements, skills, or project context."
-                  rows={14}
-                />
-              </label>
-            ) : (
-              <label className="upload-card">
-                <span className="upload-title">Attach Resume</span>
-                <span className="upload-copy">
-                  Drop in a PDF resume and let the ingestion layer extract the text.
-                </span>
-                <input accept="application/pdf" onChange={handleFileChange} type="file" />
-                <strong>{pdfFile ? pdfFile.name : "No file chosen yet"}</strong>
-              </label>
-            )}
-          </div>
-
-          <div className="state-panel to-panel">
-            <div className="state-chip state-chip-alt">To</div>
-            <h2>Target State</h2>
-            <p className="state-copy">
-              Define the destination role with a job ID and the actual target job text.
-            </p>
-
-            <div className="field-row">
-              <label className="field">
-                <span>Job ID</span>
-                <input
-                  type="text"
-                  value={jobId}
-                  onChange={(event) => setJobId(event.target.value)}
-                  placeholder="backend-engineer-01"
-                />
-              </label>
-
-              <div className="action-stack">
-                <button className="ghost-button" onClick={loadDemoData} type="button">
-                  Load Demo Data
-                </button>
-                <button
-                  className="primary-button"
-                  disabled={loading}
-                  onClick={handleGenerate}
-                  type="button"
-                >
-                  {loading ? "Building Roadmap..." : "Submit"}
-                </button>
-              </div>
-            </div>
-
-            {sampleData ? (
-              <div className="field-row">
-                <label className="field">
-                  <span>Sample Profile</span>
-                  <select
-                    value={selectedProfileId}
-                    onChange={(event) => applySelectedProfile(event.target.value)}
-                  >
-                    <option value="">Choose sample profile</option>
-                    {sampleData.profiles.map((profile) => (
-                      <option key={profile.id} value={profile.id}>
-                        {profile.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="field">
-                  <span>Sample Job</span>
-                  <select
-                    value={selectedJobId}
-                    onChange={(event) => applySelectedJob(event.target.value)}
-                  >
-                    <option value="">Choose sample job</option>
-                    {sampleData.jobs.map((job) => (
-                      <option key={job.id} value={job.id}>
-                        {job.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            ) : null}
-
-            <label className="field">
-              <span>Target Job Text</span>
-              <textarea
-                value={targetJob}
-                onChange={(event) => setTargetJob(event.target.value)}
-                placeholder="Paste the target job description or hiring brief."
-                rows={14}
-              />
-            </label>
-
-            {error ? <p className="error-banner">{error}</p> : null}
+          <div className="fullscreen-loader__steps">
+            {loadingMessages.map((message, index) => (
+              <span
+                key={message}
+                className={index <= loadingIndex ? "loader-step loader-step-active" : "loader-step"}
+              >
+                {message}
+              </span>
+            ))}
           </div>
         </section>
+      ) : null}
 
-        {loading ? (
-          <section className="loading-shell">
-            <div className="loading-orbit">
-              <div className="loading-ring loading-ring-a" />
-              <div className="loading-ring loading-ring-b" />
-              <div className="loading-core" />
-            </div>
-            <div className="loading-copy">
-              <p className="loading-label">Pipeline Running</p>
-              <h3>{loadingMessages[loadingIndex]}</h3>
-              <p>
-                Parsing things, generating roadmaps, and looking for the cleanest path
-                from current state to target state.
+      <main className="app-frame">
+        {screen === "landing" ? (
+          <section className="landing-shell">
+            <div className="landing-copy">
+              <p className="eyebrow">Career Roadmap Studio</p>
+              <h1>Understand your next role and get a clearer path to reach it.</h1>
+              <p className="landing-description">
+                Share your profile, add the role you are aiming for, and get a roadmap that
+                breaks the journey into practical next steps.
               </p>
+              <div className="landing-actions">
+                <button className="primary-button landing-button" onClick={goToProfileStep} type="button">
+                  Get Started
+                </button>
+              </div>
+            </div>
+
+            <div className="landing-preview">
+              <div className="landing-preview__card">
+                <span>Your Background</span>
+                <strong>Your experience, skills, resume, or profile</strong>
+              </div>
+              <div className="landing-preview__arrow">→</div>
+              <div className="landing-preview__card">
+                <span>Your Goal</span>
+                <strong>The role you want, plus the job description</strong>
+              </div>
+              <div className="landing-preview__arrow">→</div>
+              <div className="landing-preview__card landing-preview__card-accent">
+                <span>Your Roadmap</span>
+                <strong>A clear learning plan with prerequisites and next steps</strong>
+              </div>
             </div>
           </section>
         ) : null}
 
-        <section className="panel output-panel">
-            <div className="panel-header">
-              <h2>Roadmap</h2>
-              {result ? (
-                <div className="meta-pill-row">
-                  <span className="meta-pill">{result.ingestor_used}</span>
-                  <span className="meta-pill">{result.strategy_used}</span>
-                </div>
-              ) : null}
+        {screen === "profile" ? (
+          <section className="flow-shell">
+            <div className="flow-head">
+              <div>
+                <p className="eyebrow">Step 1</p>
+                <h2>Tell us about your current background.</h2>
+                <p className="flow-copy">
+                  Start with where you are today so we can build the roadmap from the right place.
+                </p>
+              </div>
+              <div className="flow-progress">
+                <span className="flow-dot flow-dot-active" />
+                <span className="flow-dot" />
+                <span className="flow-dot" />
+              </div>
             </div>
 
-            {!result ? (
-              <div className="empty-state">
-                <p>Generate a roadmap to see ordered nodes and dependency edges here.</p>
+            <div className="form-shell">
+              <div className="form-panel form-panel-warm">
+                <div className="section-heading">
+                  <div className="state-chip">From</div>
+                  <div>
+                    <h3>Your Starting Point</h3>
+                    <p>Resume text, profile summary, or an uploaded PDF.</p>
+                  </div>
+                </div>
+
+                <div className="field-row">
+                  <label className="field">
+                    <span>Input Type</span>
+                    <select
+                      value={sourceType}
+                      onChange={(event) =>
+                        setSourceType(event.target.value as "raw_text" | "pdf_resume")
+                      }
+                    >
+                      <option value="raw_text">Paste profile text</option>
+                      <option value="pdf_resume">Attach PDF resume</option>
+                    </select>
+                  </label>
+
+                  <label className="field">
+                    <span>Time Budget</span>
+                    <input
+                      min={1}
+                      max={52}
+                      type="number"
+                      value={timeBudgetWeeks}
+                      onChange={(event) => setTimeBudgetWeeks(Number(event.target.value))}
+                    />
+                  </label>
+                </div>
+
+                {sampleData ? (
+                  <label className="field">
+                    <span>Sample Profile</span>
+                    <select
+                      value={selectedProfileId}
+                      onChange={(event) => applySelectedProfile(event.target.value)}
+                    >
+                      <option value="">Choose sample profile</option>
+                      {sampleData.profiles.map((profile) => (
+                        <option key={profile.id} value={profile.id}>
+                          {profile.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+
+                {sourceType === "raw_text" ? (
+                  <label className="field">
+                    <span>Profile Text</span>
+                    <textarea
+                      value={sourceText}
+                      onChange={(event) => setSourceText(event.target.value)}
+                      placeholder="Paste your resume text, skills, projects, achievements, or profile summary."
+                      rows={14}
+                    />
+                  </label>
+                ) : (
+                  <label className="upload-card">
+                    <span className="upload-title">Attach Resume</span>
+                    <span className="upload-copy">
+                      Upload a PDF and let the ingestion layer pull out the meaningful text.
+                    </span>
+                    <input accept="application/pdf" onChange={handleFileChange} type="file" />
+                    <strong>{pdfFile ? pdfFile.name : "No file chosen yet"}</strong>
+                  </label>
+                )}
               </div>
-            ) : (
-              <div className="result-stack">
-                <label className="field roadmap-filter">
-                  <span>Search / Filter Roadmap</span>
-                  <input
-                    type="text"
-                    value={roadmapFilter}
-                    onChange={(event) => setRoadmapFilter(event.target.value)}
-                    placeholder="Filter by skill, rationale, or resource"
+
+              <aside className="step-aside">
+                <div className="step-aside__card">
+                  <p className="eyebrow">Why this matters</p>
+                  <h3>We start from what you already know.</h3>
+                  <p>
+                    This helps the roadmap focus on the gaps that matter instead of repeating
+                    skills you already have.
+                  </p>
+                </div>
+
+                <button className="arrow-button" onClick={goToTargetStep} type="button">
+                  Continue To Your Goal <span>→</span>
+                </button>
+
+                {error ? <p className="error-banner">{error}</p> : null}
+              </aside>
+            </div>
+          </section>
+        ) : null}
+
+        {screen === "target" ? (
+          <section className="flow-shell">
+            <div className="flow-head">
+              <div>
+                <p className="eyebrow">Step 2</p>
+                <h2>Show us the role you want to grow into.</h2>
+                <p className="flow-copy">
+                  Add the target job so we can compare it against your current profile and map the gap.
+                </p>
+              </div>
+              <div className="flow-progress">
+                <span className="flow-dot flow-dot-active" />
+                <span className="flow-dot flow-dot-active" />
+                <span className="flow-dot" />
+              </div>
+            </div>
+
+            <div className="form-shell">
+              <div className="form-panel form-panel-cool">
+                <div className="section-heading">
+                  <div className="state-chip state-chip-alt">To</div>
+                  <div>
+                    <h3>Your Target Role</h3>
+                    <p>Paste the destination job and the expectations for that role.</p>
+                  </div>
+                </div>
+
+                <div className="field-row">
+                  <label className="field">
+                    <span>Job ID</span>
+                    <input
+                      type="text"
+                      value={jobId}
+                      onChange={(event) => setJobId(event.target.value)}
+                      placeholder="backend-engineer-01"
+                    />
+                  </label>
+
+                  {sampleData ? (
+                    <label className="field">
+                      <span>Sample Job</span>
+                      <select
+                        value={selectedJobId}
+                        onChange={(event) => applySelectedJob(event.target.value)}
+                      >
+                        <option value="">Choose sample job</option>
+                        {sampleData.jobs.map((job) => (
+                          <option key={job.id} value={job.id}>
+                            {job.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <div />
+                  )}
+                </div>
+
+                <label className="field">
+                  <span>Target Job Text</span>
+                  <textarea
+                    value={targetJob}
+                    onChange={(event) => setTargetJob(event.target.value)}
+                    placeholder="Paste the target job description or role brief."
+                    rows={14}
                   />
                 </label>
-
-                <section>
-                  <RoadmapGraph
-                    edges={filteredResult?.edges ?? []}
-                    nodes={filteredResult?.nodes ?? []}
-                  />
-                </section>
-
               </div>
-            )}
-        </section>
+
+              <aside className="step-aside">
+                <div className="step-aside__card">
+                  <p className="eyebrow">Ready To Build</p>
+                  <h3>Now we can turn your goal into a plan.</h3>
+                  <p>
+                    We&apos;ll compare your current background against the target role, identify
+                    the missing skills, and generate a visual path forward.
+                  </p>
+                </div>
+
+                <div className="dual-actions">
+                  <button className="secondary-button" onClick={() => setScreen("profile")} type="button">
+                    ← Back To Background
+                  </button>
+                  <button className="primary-button" onClick={handleGenerate} type="button">
+                    Build My Roadmap
+                  </button>
+                </div>
+
+                {error ? <p className="error-banner">{error}</p> : null}
+              </aside>
+            </div>
+          </section>
+        ) : null}
+
+        {screen === "result" ? (
+          <section className="result-page">
+            <div className="result-page__head">
+              <div>
+                <p className="eyebrow">Your Roadmap</p>
+                <h2>Your learning path is ready.</h2>
+              </div>
+              <div className="result-page__actions">
+                <button className="secondary-button" onClick={() => setScreen("profile")} type="button">
+                  Edit Background
+                </button>
+                <button className="secondary-button" onClick={() => setScreen("target")} type="button">
+                  Edit Goal
+                </button>
+              </div>
+            </div>
+
+            {result ? (
+              <div className="meta-pill-row">
+                <span className="meta-pill">{result.ingestor_used}</span>
+                <span className="meta-pill">{result.strategy_used}</span>
+              </div>
+            ) : null}
+
+            <div className="result-toolbar">
+              <label className="field roadmap-filter">
+                <span>Search / Filter Roadmap</span>
+                <input
+                  type="text"
+                  value={roadmapFilter}
+                  onChange={(event) => setRoadmapFilter(event.target.value)}
+                  placeholder="Filter by skill, rationale, or resource"
+                />
+              </label>
+              <div className="result-count">
+                <span>Visible Nodes</span>
+                <strong>{filteredResult?.nodes.length ?? 0}</strong>
+              </div>
+            </div>
+
+            <RoadmapGraph edges={filteredResult?.edges ?? []} nodes={filteredResult?.nodes ?? []} />
+          </section>
+        ) : null}
       </main>
     </div>
   );
