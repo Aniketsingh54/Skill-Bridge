@@ -1,56 +1,77 @@
 # Skill-Bridge Career Navigator
 
-Candidate Name:
-Aniket Singh
+**Candidate:** Aniket Singh
+**Scenario:** Skill-Bridge Career Navigator
+**Estimated Time Spent:** ~5-6 hours
 
-Scenario Chosen:
-Skill-Bridge Career Navigator
+---
 
-Estimated Time Spent:
-Approximately 5-6 hours
+## Quick Start
 
-Quick Start:
-- Prerequisites:
-  Python 3.12+, Node.js 20+, npm
-- Run Commands:
-  ```bash
-  source venv/bin/activate
-  pip install -r requirements.txt
-  python main.py
-  ```
-  ```bash
-  cd frontend
-  npm install
-  npm run dev -- --host
-  ```
-  On some Linux Wayland setups, launching Vite through the package-manager shim can fail before the dev server starts. If that happens, this project's npm scripts now call Vite through `node` directly, which avoids the Qt/Wayland launcher issue.
-  If the frontend is calling the backend directly instead of through the Vite `/api` proxy, set `VITE_API_BASE_URL` in the frontend environment and add that frontend origin to `FRONTEND_ORIGINS` for the backend CORS allowlist.
-- Test Commands:
-  ```bash
-  source venv/bin/activate
-  pytest -v test_main.py
-  ```
+**Prerequisites:** Python 3.12+, Node.js 20+, npm
 
-AI Disclosure:
-- Did you use an AI assistant (Copilot, ChatGPT, etc.)? (Yes/No)
-  Yes
-- How did you verify the suggestions?
-  I checked the generated roadmap against the backend response contract, manually exercised the AI path and DAG fallback path, and added API-level tests for the happy path and fallback behavior.
-- Give one example of a suggestion you rejected or changed:
-  I rejected the idea of scraping LinkedIn profiles directly and replaced it with a cleaner ingestion approach using raw text and PDF resume parsing.
+```bash
+# Backend
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8080 --reload
+```
 
-Tradeoffs & Prioritization:
-- What did you cut to stay within the 4-6 hour limit?
-  I skipped authentication, persistence, multi-job aggregation, OCR for scanned PDFs, and a richer prerequisite ontology backed by a graph database.
-- What would you build next if you had more time?
-  I would improve dependency quality, add support for multiple job descriptions, separate inferred prerequisites from direct target skills, and refine the graph UX further.
-- Known limitations:
-  AI-generated edges can still be incomplete or overly opinionated, the DAG fallback covers only a limited in-memory skill map, and PDF support assumes text-extractable resumes rather than scanned images.
+```bash
+# Frontend (separate terminal)
+cd frontend
+npm install
+npm run dev -- --host
+```
 
-Project Notes:
-- Synthetic dataset is included in [sample_data.json](sample_data.json).
-- Backend docs are available at `http://localhost:8080/docs`.
-- The frontend calls the backend through the Vite `/api` proxy during development.
+> **Note:** If the frontend calls the backend directly instead of through the Vite `/api` proxy, set `VITE_API_BASE_URL` in the frontend `.env` and add that origin to `FRONTEND_ORIGINS` on the backend.
 
-Video:
+**Run tests:**
+```bash
+source .venv/bin/activate
+pytest -v test_main.py
+```
+
+---
+
+## AI Disclosure
+
+- **Used AI assistant?** Yes (Gemini API for roadmap generation; AI tools for development assistance)
+- **How suggestions were verified:** Generated roadmaps were checked against the backend response contract; the AI path and DAG fallback path were manually exercised; API-level tests cover the happy path and fallback behaviour.
+- **Example of a rejected suggestion:** Rejected direct LinkedIn profile scraping; replaced with a cleaner ingestion approach using raw text and PDF resume parsing.
+
+---
+
+## Tradeoffs & Prioritization
+
+**Cut to stay within time limit:**
+- Authentication and per-user persistence
+- Multi-job aggregation
+- OCR for scanned PDFs
+- Rich prerequisite ontology backed by a graph database
+
+**Would build next:**
+- Improved dependency quality and completeness
+- Support for multiple job descriptions side-by-side
+- Separation of inferred prerequisites from direct target skills
+- Graph UX refinements (collapsible paths, estimated cost overlays)
+
+**Known limitations:**
+- AI-generated edges can still be incomplete or overly opinionated
+- DAG fallback covers only a limited in-memory skill map
+- PDF support assumes text-extractable resumes (not scanned images)
+
+---
+
+## Project Notes
+
+- Synthetic dataset: [sample_data.json](sample_data.json)
+- Backend API docs: `http://localhost:8080/docs`
+- Frontend proxies `/api` calls through Vite during development
+
+---
+
+## Video
+
+<!-- Replace this line with your YouTube/Vimeo link before submitting -->
 Add your unlisted demo recording link here.

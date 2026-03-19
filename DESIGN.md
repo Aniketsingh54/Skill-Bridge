@@ -1,33 +1,67 @@
-# Skill-Bridge Design
+# Skill-Bridge Design Document
 
 ## Overview
-Skill-Bridge is a two-component career navigation platform. The system accepts a learner profile and a target job description, then produces a dependency-aware roadmap that highlights what to learn next.
 
-## Component 1: Ingestion Layer
-The ingestion layer converts different input forms into normalized text that the rest of the system can analyze.
+Skill-Bridge is a two-component career navigation platform. It accepts a learner profile and a target job description, then produces a dependency-aware visual roadmap that highlights the most direct learning path to the target role.
 
-- `AbstractIngestor` defines the ingestion contract.
-- `RawTextIngestor` normalizes pasted text.
-- `PDFResumeIngestor` extracts and cleans text from uploaded PDF resumes.
+---
 
-This keeps source-specific cleanup isolated from roadmap generation. New sources can be added as subclasses without rewriting the API route.
+## Scoring Pillar Alignment
 
-## Component 2: Roadmap Generation
-The roadmap layer uses a strategy pattern so the app can switch between AI generation and deterministic fallback logic.
+### 1. Problem Understanding
+The challenge is precise: hiring teams need to evaluate candidates' skill gaps quickly, and candidates need a concrete learning plan. Skill-Bridge takes **both sides of that gap** as inputs (current profile, target JD) and outputs a directed graph of actionable steps — ordered by dependency, not by arbitrary priority.
 
-- `AIGenerationStrategy` asks Gemini to identify missing skills and infer dependency edges.
-- `DAGFallbackStrategy` provides a mathematical fallback based on a known dependency map.
+### 2. Technical Rigor
+The system is built in two decoupled layers:
 
-The API always returns the same response shape: `nodes` and `edges`.
+**Component 1 — Ingestion Layer**
+Converts varied input formats into normalized text for the roadmap engine.
+- `AbstractIngestor` defines the contract.
+- `RawTextIngestor` normalizes pasted profile/JD text.
+- `PDFObjectIngestor` extracts and cleans text from uploaded PDF files.
 
-## Fallback Trapdoor
-External AI calls are unreliable by nature. The `/api/analyze` route attempts AI generation first, then catches any failure and falls back to the DAG strategy. This keeps the user experience stable and satisfies the requirement for graceful degradation.
+New input sources can be added as subclasses without touching any API route.
 
-## Zero-Retention
-The backend is zero-retention by design. It does not persist resumes, job descriptions, or profile text to a database. Requests are processed in memory and returned as responses only.
+**Component 2 — Roadmap Generation (Strategy Pattern)**
+The strategy pattern allows the app to switch algorithms transparently:
+- `AIGenerationStrategy` — sends normalized source+target text to Gemini, which identifies missing skills and infers prerequisite dependency edges.
+- `DAGFallbackStrategy` — a deterministic fallback using a curated in-memory skill dependency map, used when the AI call fails.
+
+The API always returns the same `{ nodes, edges }` shape regardless of which strategy ran.
+
+**Fallback Trapdoor**
+`/api/analyze` attempts AI generation first. On any failure it silently falls back to the DAG strategy, keeping the experience stable.
+
+**Zero-Retention**
+The backend is stateless by design. No resumes, JDs, or profile text are persisted to a database. All processing happens in-memory within the request lifecycle.
+
+### 3. Creativity
+- **Hover tooltip graph** — nodes reveal rationale and resources on hover without cluttering the base view.
+- **Email report** — users can send their roadmap to any email address as a formatted HTML report, built entirely on the frontend.
+- **Dynamic Next Step banner** — the system identifies the true root node (first skill with no prerequisites) and surfaces it as the recommended next action, not just the first item in the list.
+- **Dual ingestion** — raw text and PDF uploads let the same flow handle both structured resumes and pasted summaries.
+
+### 4. Prototype Quality
+- Full-stack: FastAPI backend + Vite/React frontend.
+- Live API docs at `/docs` (Swagger UI).
+- Sample profiles and job descriptions included for immediate demo use.
+- Filter bar to search the graph by skill, resource, or rationale.
+- Responsive layout with smooth animations.
+
+### 5. Responsible AI
+- **AI Disclosure** — documented in README; use of Gemini API is declared.
+- **Human-verifiable output** — every generated node includes a `rationale` field explaining why that skill was included. Users can audit and challenge the roadmap.
+- **Graceful degradation** — when AI output is unavailable or unreliable, a deterministic DAG provides a safe fallback. The user experience is never broken by an AI failure.
+- **Zero-retention** — profile and JD text are not stored, reducing data exposure risk.
+- **Input validation** — Pydantic models enforce strict types and ranges on all API inputs; base64 PDF payloads are validated before processing.
+
+---
 
 ## Tradeoffs
-- The DAG fallback uses a small in-memory dependency map instead of a graph database.
-- The AI-generated graph can still be incomplete if the model omits prerequisites.
-- PDF handling currently supports text extraction but not scanned OCR resumes.
-- No authentication or per-user persistence is implemented in this version.
+
+| Decision | Rationale |
+|---|---|
+| In-memory DAG fallback instead of a graph DB | Avoids infra dependency; sufficient for a demo scope |
+| No authentication | Out of scope for a prototype; would be first addition in production |
+| Text-only PDF extraction (no OCR) | PyPDF covers text-layer PDFs; OCR adds significant complexity |
+| AI edges can be incomplete | Documented limitation; mitigated by the rationale field and human review |
