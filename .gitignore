@@ -1,6 +1,7 @@
-*.md
 venv/
 __pycache__/
 *.pyc
 payload.json
 .env
+frontend/node_modules/
+frontend/dist/

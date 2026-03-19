@@ -4,3 +4,5 @@ pydantic
 pypdf
 google-genai
 python-dotenv
+pytest
+httpx
