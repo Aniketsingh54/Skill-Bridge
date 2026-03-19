@@ -156,14 +156,15 @@ function RoadmapGraph({ nodes, edges }: RoadmapGraphProps) {
     ? positioned.find((n) => n.node_id === hoveredNodeId) ?? null
     : null;
 
-  // Convert SVG coordinates → percentage within the stage div so the HTML
-  // tooltip can be positioned absolutely without any coordinate conversion.
+  // Tooltip position: centre horizontally on the node, sit just above its top edge.
+  // Centering is done via marginLeft (half tooltip width) so the CSS
+  // `transform` property is exclusively owned by the enter/exit animation.
+  const tooltipWidth = 360;
   const popupStyle = hoveredNode
     ? {
         left: `${((hoveredNode.x + NODE_WIDTH / 2) / width) * 100}%`,
-        // Position above the node's top edge
         top: `${(hoveredNode.y / height) * 100}%`,
-        transform: "translate(-50%, calc(-100% - 12px))",
+        marginLeft: `${-tooltipWidth / 2}px`,
       }
     : undefined;
 

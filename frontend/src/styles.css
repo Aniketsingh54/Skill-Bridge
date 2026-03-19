@@ -767,28 +767,34 @@ button {
 .graph-tooltip {
   position: absolute;
   z-index: 10;
-  width: 240px;
-  padding: 14px 16px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.97);
+  width: 360px;
+  padding: 22px 24px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.98);
   border: 1px solid rgba(20, 32, 51, 0.09);
   box-shadow:
     0 4px 6px rgba(15, 23, 42, 0.04),
-    0 20px 40px rgba(15, 23, 42, 0.14);
+    0 24px 48px rgba(15, 23, 42, 0.16);
   pointer-events: none;
 
-  /* Hidden state */
+  /*
+    transform does two things in ONE property:
+      1. translateY(-100% - 16px) → positions tooltip above the node (no inline override)
+      2. translateY(+10px) scale(0.95) → hidden-state animation offset
+    Both are combined so the browser transitions the whole thing smoothly.
+  */
   opacity: 0;
-  transform: translateY(6px) scale(0.97);
+  transform: translateY(calc(-100% - 6px)) translateY(10px) scale(0.95);
   transform-origin: bottom center;
   transition:
     opacity 200ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 240ms cubic-bezier(0.34, 1.4, 0.64, 1);
+    transform 260ms cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
 .graph-tooltip--visible {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  /* Same base translateY, animation offset removed */
+  transform: translateY(calc(-100% - 16px)) scale(1);
   pointer-events: auto;
 }
 
@@ -796,37 +802,37 @@ button {
 .graph-tooltip::after {
   content: "";
   position: absolute;
-  bottom: -7px;
+  bottom: -8px;
   left: 50%;
   transform: translateX(-50%);
-  width: 14px;
-  height: 7px;
-  background: rgba(255, 255, 255, 0.97);
+  width: 16px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.98);
   clip-path: polygon(0 0, 100% 0, 50% 100%);
-  border-bottom: 1px solid rgba(20, 32, 51, 0.06);
 }
 
 .graph-tooltip__title {
-  margin: 2px 0 8px;
-  font-size: 1.05rem;
-  line-height: 1.25;
+  margin: 4px 0 12px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
   color: #102036;
 }
 
 .graph-tooltip__body {
-  margin: 0 0 8px;
-  font-size: 0.84rem;
-  line-height: 1.5;
+  margin: 0 0 14px;
+  font-size: 1rem;
+  line-height: 1.6;
   color: #516277;
 }
 
 .graph-tooltip__chip {
   display: inline-block;
-  padding: 3px 8px;
+  padding: 5px 12px;
   border-radius: 999px;
   background: rgba(15, 118, 110, 0.1);
   color: #0f766e;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 700;
 }
 
