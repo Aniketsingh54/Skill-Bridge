@@ -1,7 +1,7 @@
 # Skill-Bridge Career Navigator
 
 Candidate Name:
-Vishwanath
+Aniket Singh
 
 Scenario Chosen:
 Skill-Bridge Career Navigator
@@ -46,7 +46,7 @@ Tradeoffs & Prioritization:
   AI-generated edges can still be incomplete or overly opinionated, the DAG fallback covers only a limited in-memory skill map, and PDF support assumes text-extractable resumes rather than scanned images.
 
 Project Notes:
-- Synthetic dataset is included in [sample_data.json](/mnt/c/Users/Vishwanath/palo/sample_data.json).
+- Synthetic dataset is included in [sample_data.json](sample_data.json).
 - Backend docs are available at `http://localhost:8080/docs`.
 - The frontend calls the backend through the Vite `/api` proxy during development.
 
