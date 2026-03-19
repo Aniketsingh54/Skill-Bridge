@@ -2,20 +2,32 @@ import base64
 import binascii
 import json
 import os
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Dict
+
+
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.ingestion.pdf_object_ingestor import PDFObjectIngestor
 from app.ingestion.raw_text_ingestor import RawTextIngestor
-from app.models import AnalyzeResponse, GenerationRequest
+from app.models import AnalyzeResponse, GenerationRequest, SendEmailRequest
 from app.roadmap_generator.ai_generation_strategy import AIGenerationStrategy
 from app.roadmap_generator.dag_fallback_strategy import DAGFallbackStrategy
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SAMPLE_DATA_PATH = BASE_DIR / "sample_data.json"
+
+SMTP_USER = os.getenv("SMTP_USER", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
+
+
 
 
 def get_allowed_origins() -> list[str]:
@@ -140,3 +152,30 @@ def analyze_profile(request: GenerationRequest) -> AnalyzeResponse:
         ingestor_used=source_ingestor.__class__.__name__,
         strategy_used=strategy.__class__.__name__,
     )
+
+
+@app.post("/api/send-email")
+def send_roadmap_email(req: SendEmailRequest) -> Dict[str, str]:
+    if not SMTP_USER or not SMTP_PASSWORD:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Email sending is not configured on this server. "
+                "Set SMTP_USER and SMTP_PASSWORD in the environment."
+            ),
+        )
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = req.subject
+    msg["From"] = SMTP_USER
+    msg["To"] = req.email
+    msg.attach(MIMEText(req.html_body, "html"))
+
+    try:
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(SMTP_USER, req.email, msg.as_string())
+    except smtplib.SMTPException as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to send email: {exc}") from exc
+
+    return {"status": "sent"}

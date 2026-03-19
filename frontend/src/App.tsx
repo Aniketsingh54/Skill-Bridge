@@ -1,6 +1,7 @@
 import { ChangeEvent, useEffect, useState } from "react";
 
 import RoadmapGraph from "./components/RoadmapGraph";
+import { buildRoadmapEmail } from "./utils/emailReport";
 
 type Node = {
   node_id: string;
@@ -76,6 +77,9 @@ function App() {
   const [selectedProfileId, setSelectedProfileId] = useState("");
   const [selectedJobId, setSelectedJobId] = useState("");
   const [roadmapFilter, setRoadmapFilter] = useState("");
+  const [emailInput, setEmailInput] = useState("");
+  const [emailStatus, setEmailStatus] = useState<"idle" | "open" | "sending" | "sent" | "error">("idle");
+  const [emailError, setEmailError] = useState("");
 
   useEffect(() => {
     if (!loading) {
@@ -224,6 +228,33 @@ function App() {
       setScreen("target");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailInput.trim() || !result) return;
+    setEmailStatus("sending");
+    setEmailError("");
+    try {
+      const roleLabel = targetJob.slice(0, 120);
+      const htmlBody = buildRoadmapEmail(result.nodes, result.edges, roleLabel);
+      const res = await fetch(`${API_BASE_URL}/api/send-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: emailInput.trim(),
+          subject: `Your Career Roadmap → ${roleLabel || "your target role"}`,
+          html_body: htmlBody,
+        }),
+      });
+      if (!res.ok) {
+        const data = (await res.json()) as { detail?: string };
+        throw new Error(data.detail ?? "Failed to send email.");
+      }
+      setEmailStatus("sent");
+    } catch (err) {
+      setEmailError(err instanceof Error ? err.message : "Something went wrong.");
+      setEmailStatus("error");
     }
   };
 
@@ -610,8 +641,42 @@ function App() {
                 <button className="secondary-button" onClick={() => setScreen("target")} type="button">
                   Edit Goal
                 </button>
+                <button
+                  className="secondary-button email-trigger-btn"
+                  onClick={() => {
+                    setEmailStatus(emailStatus === "open" ? "idle" : "open");
+                    setEmailError("");
+                  }}
+                  type="button"
+                >
+                  {emailStatus === "sent" ? "✓ Sent!" : "📧 Send to my Email"}
+                </button>
               </div>
             </div>
+
+            {/* Inline email capture form */}
+            {(emailStatus === "open" || emailStatus === "sending" || emailStatus === "error") && (
+              <div className="email-form">
+                <input
+                  className="email-form__input"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && void handleSendEmail()}
+                  disabled={emailStatus === "sending"}
+                />
+                <button
+                  className="primary-button email-form__send"
+                  type="button"
+                  disabled={emailStatus === "sending" || !emailInput.trim()}
+                  onClick={() => void handleSendEmail()}
+                >
+                  {emailStatus === "sending" ? "Sending…" : "Send Report"}
+                </button>
+                {emailError && <p className="error-banner email-form__error">{emailError}</p>}
+              </div>
+            )}
 
             {result ? (
               <div className="meta-pill-row">

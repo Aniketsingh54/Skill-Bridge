@@ -71,3 +71,9 @@ class AnalyzeResponse(BaseModel):
     edges: List[GraphEdge]
     ingestor_used: str
     strategy_used: str
+
+
+class SendEmailRequest(BaseModel):
+    email: str = Field(..., description="Recipient email address.")
+    subject: str = Field(default="Your Career Roadmap", description="Email subject line.")
+    html_body: str = Field(..., description="Pre-rendered HTML email body from the frontend.")
