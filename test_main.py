@@ -188,6 +188,7 @@ def test_invalid_pdf_payload_returns_clear_error():
     assert "valid base64-encoded PDF content" in response.json()["detail"]
 
 
+
 def test_invalid_target_pdf_payload_returns_clear_error():
     response = client.post(
         "/api/analyze",
@@ -202,3 +203,101 @@ def test_invalid_target_pdf_payload_returns_clear_error():
 
     assert response.status_code == 400
     assert "target_file_base64 must be valid base64-encoded PDF content" in response.json()["detail"]
+
+
+def test_send_email_happy_path(monkeypatch):
+    # 1. Setup creds
+    monkeypatch.setenv("SMTP_USER", "test@gmail.com")
+    monkeypatch.setenv("SMTP_PASSWORD", "testpass")
+
+    # 2. Mock SMTP_SSL
+    class MockSMTP:
+        def __init__(self, *args, **kwargs):
+            self.logged_in = False
+            self.sent = False
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def login(self, user, password):
+            assert user == "test@gmail.com"
+            assert password == "testpass"
+            self.logged_in = True
+
+        def sendmail(self, from_addr, to_addr, msg):
+            assert from_addr == "test@gmail.com"
+            assert to_addr == "user@example.com"
+            assert "Your Career Roadmap" in msg
+            self.sent = True
+
+    monkeypatch.setattr("smtplib.SMTP_SSL", MockSMTP)
+    # Re-patch these in app.main since they are loaded at module level
+    monkeypatch.setattr("app.main.SMTP_USER", "test@gmail.com")
+    monkeypatch.setattr("app.main.SMTP_PASSWORD", "testpass")
+
+    response = client.post(
+        "/api/send-email",
+        json={
+            "email": "user@example.com",
+            "subject": "Your Career Roadmap",
+            "html_body": "<h1>Testing</h1>",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "sent"}
+
+
+def test_send_email_fails_without_config(monkeypatch):
+    # Ensure creds are missing in the patched module
+    monkeypatch.setattr("app.main.SMTP_USER", "")
+    monkeypatch.setattr("app.main.SMTP_PASSWORD", "")
+
+    response = client.post(
+        "/api/send-email",
+        json={
+            "email": "user@example.com",
+            "subject": "Test",
+            "html_body": "test",
+        },
+    )
+
+    assert response.status_code == 503
+    assert "not configured" in response.json()["detail"]
+
+
+def test_send_email_handles_smtp_exception(monkeypatch):
+    monkeypatch.setattr("app.main.SMTP_USER", "test@gmail.com")
+    monkeypatch.setattr("app.main.SMTP_PASSWORD", "testpass")
+
+    import smtplib
+
+    class BrokenSMTP:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def login(self, user, password):
+            raise smtplib.SMTPException("Auth failed")
+
+    monkeypatch.setattr("smtplib.SMTP_SSL", BrokenSMTP)
+
+    response = client.post(
+        "/api/send-email",
+        json={
+            "email": "user@example.com",
+            "subject": "Test",
+            "html_body": "test",
+        },
+    )
+
+    assert response.status_code == 502
+    assert "Auth failed" in response.json()["detail"]

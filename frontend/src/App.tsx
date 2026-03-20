@@ -48,6 +48,7 @@ type InputType = "raw_text" | "pdf_object";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
 const API_URL = `${API_BASE_URL}/api/analyze`;
+const EMAIL_API_URL = `${API_BASE_URL}/api/send-email`;
 const SAMPLE_DATA_URL = `${API_BASE_URL}/api/sample-data`;
 const MAX_TIME_BUDGET_WEEKS = 104;
 const loadingMessages = [
@@ -238,7 +239,7 @@ function App() {
     try {
       const roleLabel = targetJob.slice(0, 120);
       const htmlBody = buildRoadmapEmail(result.nodes, result.edges, roleLabel);
-      const res = await fetch(`${API_BASE_URL}/api/send-email`, {
+      const res = await fetch(EMAIL_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
