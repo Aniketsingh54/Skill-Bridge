@@ -1,19 +1,21 @@
 # Skill-Bridge Career Navigator
 
 **Candidate Name:** Aniket Singh
+
 **Scenario Chosen:** Skill-Bridge Career Navigator
+
 **Estimated Time Spent:** Approximately 5-6 hours
 
 ---
 
 ## Key Features
 
-- **AI-Powered Skill Gap Analysis** — Gemini analyses your current profile vs. a target job description and generates a dependency-aware roadmap ordered by prerequisite logic, not arbitrary priority.
-- **Cybersecurity-Focused Sample Data** — Ships with profiles for transitioning into **Cloud Security Engineer** and **AI Security Operations** roles, directly mirroring the FY26 IT hiring context.
-- **Interactive Roadmap Graph** — SVG-based directed graph with hover popups showing rationale and learning resources per node.
-- **Deterministic Fallback** — If AI generation fails, a mathematical DAG provides a stable, bias-free result automatically.
-- **Professional Email Reports** — Send a polished HTML roadmap to any email address via the "Send to my Email" feature.
-- **Dual Ingestion** — Raw text input and PDF uploads supported for both profile and job description.
+- **AI-Powered Skill Gap Analysis**,  Gemini analyses your current profile vs. a target job description and generates a dependency-aware roadmap ordered by prerequisite logic, not arbitrary priority.
+- **Cybersecurity-Focused Sample Data**,  Ships with profiles for transitioning into **Cloud Security Engineer** and **AI Security Operations** roles, directly mirroring the FY26 IT hiring context.
+- **Interactive Roadmap Graph**,  SVG-based directed graph with hover popups showing rationale and learning resources per node.
+- **Deterministic Fallback**,  If AI generation fails, a mathematical DAG provides a stable, bias-free result automatically.
+- **Professional Email Reports**,  Send a polished HTML roadmap to any email address via the "Send to my Email" feature.
+- **Dual Ingestion**,  Raw text input and PDF uploads supported for both profile and job description.
 
 ---
 
