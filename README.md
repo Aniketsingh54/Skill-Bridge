@@ -8,11 +8,12 @@
 
 ## Key Features
 
-- **AI-Powered Learning Path** — Leverages Gemini to analyze your current profile vs. a target job description and generate a dependency-aware skill roadmap.
-- **Interactive Roadmap Graph** — A visual SVG-based graph showing prerequisites and milestones. Hover over any node for a detailed popup with rationale and learning resources.
-- **Deterministic Fallback** — Built-in graceful degradation; if the AI generation fails, the system automatically falls back to a mathematical Directed Acyclic Graph (DAG) strategy for stability.
-- **Professional Email Reports** — Send a polished HTML version of your roadmap to any email address via the "Send to my Email" feature.
-- **Dual Ingestion** — Support for both raw text input and PDF object uploads (resumes/JDs).
+- **AI-Powered Skill Gap Analysis** — Gemini analyses your current profile vs. a target job description and generates a dependency-aware roadmap ordered by prerequisite logic, not arbitrary priority.
+- **Cybersecurity-Focused Sample Data** — Ships with profiles for transitioning into **Cloud Security Engineer** and **AI Security Operations** roles, directly mirroring the FY26 IT hiring context.
+- **Interactive Roadmap Graph** — SVG-based directed graph with hover popups showing rationale and learning resources per node.
+- **Deterministic Fallback** — If AI generation fails, a mathematical DAG provides a stable, bias-free result automatically.
+- **Professional Email Reports** — Send a polished HTML roadmap to any email address via the "Send to my Email" feature.
+- **Dual Ingestion** — Raw text input and PDF uploads supported for both profile and job description.
 
 ---
 

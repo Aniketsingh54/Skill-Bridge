@@ -703,6 +703,13 @@ function App() {
             </div>
 
             <RoadmapGraph edges={filteredResult?.edges ?? []} nodes={filteredResult?.nodes ?? []} />
+
+            {/* Responsible AI disclaimer */}
+            <p className="ai-disclaimer">
+              ⚠️ This roadmap is AI-generated and may reflect biases in training data. It is a
+              starting point — not professional career advice. Review each node, verify resources,
+              and consult a mentor before making major decisions.
+            </p>
           </section>
         ) : null}
       </main>

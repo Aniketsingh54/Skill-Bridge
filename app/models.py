@@ -6,7 +6,8 @@ from pydantic import BaseModel, Field
 class GenerationRequest(BaseModel):
     source_text: str = Field(
         default="",
-        description="Profile text for raw_text ingestion.",
+        max_length=25_000,
+        description="Profile text for raw_text ingestion. Capped at 25 000 chars (~5 000 tokens) to prevent runaway AI calls.",
     )
     source_type: Literal["raw_text", "pdf_object"] = Field(
         default="raw_text",
@@ -26,7 +27,8 @@ class GenerationRequest(BaseModel):
     )
     target_job: str = Field(
         default="",
-        description="Target job description when target_type is raw_text.",
+        max_length=10_000,
+        description="Target job description when target_type is raw_text. Capped at 10 000 chars.",
     )
     time_budget_weeks: int = Field(
         default=8,
@@ -75,5 +77,5 @@ class AnalyzeResponse(BaseModel):
 
 class SendEmailRequest(BaseModel):
     email: str = Field(..., description="Recipient email address.")
-    subject: str = Field(default="Your Career Roadmap", description="Email subject line.")
-    html_body: str = Field(..., description="Pre-rendered HTML email body from the frontend.")
+    subject: str = Field(default="Your Career Roadmap", max_length=200, description="Email subject line.")
+    html_body: str = Field(..., max_length=500_000, description="Pre-rendered HTML email body from the frontend.")

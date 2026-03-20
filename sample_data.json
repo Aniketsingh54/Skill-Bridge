@@ -2,15 +2,27 @@
   "profiles": [
     {
       "id": "recent-grad-backend",
-      "label": "Recent Graduate - Backend",
+      "label": "Recent Graduate – Backend",
       "source_type": "raw_text",
       "source_text": "Aarav is a recent graduate with experience in Python, Git, SQL, and building small APIs with FastAPI. He has shipped academic projects, worked with teammates using GitHub, and is comfortable reading backend code."
     },
     {
       "id": "career-switcher-data",
-      "label": "Career Switcher - Analytics to Platform",
+      "label": "Career Switcher – Analytics to Platform",
       "source_type": "raw_text",
       "source_text": "Maya has 3 years of analytics experience using SQL, dashboards, spreadsheets, and stakeholder reporting. She is now transitioning toward backend and platform engineering, with some beginner Python experience."
+    },
+    {
+      "id": "swe-to-security",
+      "label": "Software Engineer → Cloud Security",
+      "source_type": "raw_text",
+      "source_text": "Riya is a software engineer with 2 years of Python and REST API development experience. She understands basic networking (HTTP, TCP/IP) and has used Linux in development environments. She wants to move into a cloud security engineering role at an AI-driven cybersecurity company. She has no formal security training but has completed a beginner CTF."
+    },
+    {
+      "id": "it-generalist-security",
+      "label": "IT Generalist → AI Security Operations",
+      "source_type": "raw_text",
+      "source_text": "Jordan is an IT support specialist with 3 years of experience managing Windows and Linux systems, firewalls, and basic network troubleshooting. He has scripted with Bash and Python for automation. He wants to transition into AI security operations, helping protect AI runtime applications and infrastructure."
     }
   ],
   "jobs": [
@@ -28,6 +40,16 @@
       "id": "data-platform-01",
       "label": "Data Platform Engineer",
       "job_text": "Need a data platform engineer with Python, SQL, PostgreSQL, Docker, AWS, orchestration, and data pipeline reliability experience."
+    },
+    {
+      "id": "cloud-security-engineer-01",
+      "label": "Cloud Security Engineer (AI Runtime)",
+      "job_text": "Palo Alto Networks is hiring a Cloud Security Engineer to secure AI runtime infrastructure. Requirements: Linux hardening, container security (Docker, Kubernetes), IAM and least-privilege access controls, SIEM/SOAR familiarity, threat modelling, network security fundamentals (firewalls, VPNs, zero-trust), scripting in Python or Bash for security automation, and experience with at least one cloud provider (AWS, GCP, or Azure). Bonus: familiarity with OWASP Top 10, CVE analysis, or AI/ML pipeline security."
+    },
+    {
+      "id": "ai-security-ops-01",
+      "label": "AI Security Operations Analyst",
+      "job_text": "We are looking for an AI Security Operations Analyst to support the team building AI-driven threat detection systems. Must have: security fundamentals (SIEM, log analysis, incident response), Python scripting, understanding of ML model behaviour and adversarial attacks, cloud infrastructure basics (AWS or GCP), and ability to work with security APIs and automation tooling."
     }
   ]
 }

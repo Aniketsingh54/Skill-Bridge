@@ -619,6 +619,18 @@ button {
   font-weight: 700;
 }
 
+.ai-disclaimer {
+  margin: 28px 0 0;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border-left: 4px solid #d97706;
+  background: rgba(251, 191, 36, 0.08);
+  color: #92400e;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  opacity: 0.88;
+}
+
 .result-toolbar {
   display: grid;
   grid-template-columns: 1fr auto;
