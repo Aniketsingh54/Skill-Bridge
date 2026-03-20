@@ -86,5 +86,4 @@ For a deep dive into the technical details, scoring pillar alignment, and trade-
 
 ## Video
 
-<!-- Replace this line with your YouTube/Vimeo link before submitting -->
-Add your unlisted demo recording link here.
+Here's the [Demo Link](https://youtu.be/dWHGzhcW1Xw)

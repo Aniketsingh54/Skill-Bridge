@@ -679,13 +679,6 @@ function App() {
               </div>
             )}
 
-            {result ? (
-              <div className="meta-pill-row">
-                <span className="meta-pill">{result.ingestor_used}</span>
-                <span className="meta-pill">{result.strategy_used}</span>
-              </div>
-            ) : null}
-
             <div className="result-toolbar">
               <label className="field roadmap-filter">
                 <span>Search / Filter Roadmap</span>
